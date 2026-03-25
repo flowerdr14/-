@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: patients
+    // Document ID: patientId (string)
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - birthDate: string
+    //   - chartNumber: string (required)
+    //   - age: string
+    //   - gender: string
+    //   - bsa: string
+    //   - weight: string
+    //   - height: string
+    //   - premedication: string
+    //   - hydration: string
+    //   - sideEffects: string
+    //   - adjustmentCriteria: string
+    //   - chemoOrders: list of maps
+    //   - ownerId: string (required, immutable)
+    //   - updatedAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidPatient(data) {
+      return data.id is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.chartNumber is string && data.chartNumber.size() < 50 &&
+             data.ownerId is string &&
+             (data.chemoOrders is list || !('chemoOrders' in data)) &&
+             (!('age' in data) || data.age is string) &&
+             (!('gender' in data) || data.gender is string) &&
+             (!('bsa' in data) || data.bsa is string) &&
+             (!('weight' in data) || data.weight is string) &&
+             (!('height' in data) || data.height is string);
+    }
+
+    match /patients/{patientId} {
+      // Allow public access as requested by user to bypass login issues
+      allow read, write: if true;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

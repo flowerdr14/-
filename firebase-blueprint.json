@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient information and chemotherapy orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "chartNumber": { "type": "string" },
+        "age": { "type": "string" },
+        "gender": { "type": "string" },
+        "bsa": { "type": "string" },
+        "weight": { "type": "string" },
+        "height": { "type": "string" },
+        "premedication": { "type": "string" },
+        "hydration": { "type": "string" },
+        "sideEffects": { "type": "string" },
+        "adjustmentCriteria": { "type": "string" },
+        "chemoOrders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "cycle": { "type": "string" },
+              "day": { "type": "string" },
+              "drug": { "type": "string" },
+              "dose": { "type": "string" }
+            }
+          }
+        },
+        "ownerId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "chartNumber", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Collection of patients"
+    }
+  }
+}

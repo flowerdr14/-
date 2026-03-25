@@ -1,0 +1,5 @@
+{
+  "name": "AntiCancer Order",
+  "description": "환자 정보 관리 및 항암제 투여 계획(Cycle, Day, Drug, Dose)을 관리하는 프로그램",
+  "requestFramePermissions": []
+}
