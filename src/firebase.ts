@@ -2,35 +2,19 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Use environment variables for Firebase configuration
-// These are configured in the AI Studio UI Settings panel or Vercel Environment Variables
+// Fallback configuration for AI Studio environment
+// These values are taken from firebase-applet-config.json
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY || "AIzaSyClLpxmm-CAA8-CbhDgBI5l4i5154gDO48",
+  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN || "total-nurse.firebaseapp.com",
+  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID || "total-nurse",
+  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET || "total-nurse.firebasestorage.app",
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID || "259950983795",
+  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID || "1:259950983795:web:d067eb9c1db266e6d18806",
 };
 
-// Detailed check for missing config
-const requiredKeys = [
-  'VITE_FIREBASE_API_KEY',
-  'VITE_FIREBASE_PROJECT_ID',
-  'VITE_FIREBASE_APP_ID',
-  'VITE_FIREBASE_DATABASE_ID'
-];
-
-const missingKeys = requiredKeys.filter(key => !import.meta.env[key]);
-
-if (missingKeys.length > 0) {
-  console.error('❌ Firebase configuration is incomplete!');
-  console.error('Missing variables:', missingKeys.join(', '));
-  console.warn('Please check your Vercel Environment Variables settings.');
-}
+const dbId = (import.meta as any).env.VITE_FIREBASE_DATABASE_ID || "ai-studio-c439189c-2797-4f05-b0a0-200e22a1b70b";
 
 const app = initializeApp(firebaseConfig);
-// Use default database if VITE_FIREBASE_DATABASE_ID is missing, but log it
-const dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
-export const db = getFirestore(app, dbId || undefined);
+export const db = getFirestore(app, dbId);
 export const auth = getAuth(app);

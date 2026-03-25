@@ -277,9 +277,9 @@ const ChemoOrderPopup = ({ patient, onUpdate }: { patient: Patient, onUpdate: (p
         </button>
         <button
           onClick={() => window.close()}
-          className="px-8 py-2 bg-[#00A86B] text-white font-bold border-2 border-black hover:bg-[#008F5B] transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+          className="px-8 py-2 bg-black text-white font-bold border-2 border-black hover:bg-gray-800 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
         >
-          저장
+          저장 및 종료
         </button>
       </div>
     </div>
@@ -357,34 +357,34 @@ const CalculatorPopup = () => {
 // --- Main App ---
 
 export default function App() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [patients, setPatients] = useState<Patient[]>(() => {
+    const saved = localStorage.getItem('patients_cache');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(() => {
+    return localStorage.getItem('selected_patient_id');
+  });
   const [searchTerm, setSearchTerm] = useState('');
-  const [loginId, setLoginId] = useState('');
-  const [loginPw, setLoginPw] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(true);
+
+  // Persistence
+  useEffect(() => {
+    localStorage.setItem('patients_cache', JSON.stringify(patients));
+  }, [patients]);
+
+  useEffect(() => {
+    if (selectedPatientId) {
+      localStorage.setItem('selected_patient_id', selectedPatientId);
+    }
+  }, [selectedPatientId]);
 
   // Handle Popup Routing
   const queryParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const view = queryParams.get('view');
 
-  // Auth Listener
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setIsAuthReady(true);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
   // Firestore Connection Test
   useEffect(() => {
     async function testConnection() {
-      if (!user) return;
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {
@@ -394,34 +394,33 @@ export default function App() {
       }
     }
     testConnection();
-  }, [user]);
+  }, []);
 
   // Firestore Sync
   useEffect(() => {
-    if (!isAuthReady || view) return;
+    if (view) return;
 
-    // If no user, we fetch all patients (public mode)
-    const q = user 
-      ? query(collection(db, 'patients'), where('ownerId', '==', user.uid))
-      : query(collection(db, 'patients'));
+    // We fetch all patients (public mode) to ensure they don't disappear on refresh
+    const q = query(collection(db, 'patients'));
       
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as Patient);
       setPatients(data);
-      if (data.length > 0 && !selectedPatientId) {
+      
+      // Auto-select first patient if none selected
+      if (data.length > 0 && !localStorage.getItem('selected_patient_id')) {
         setSelectedPatientId(data[0].id);
       }
     }, (error) => {
       console.warn("Firestore Sync Warning:", error.message);
-      // We don't throw error here to keep the app running in public mode
     });
 
     return () => unsubscribe();
-  }, [isAuthReady, user, view, selectedPatientId]);
+  }, [view]);
 
   // Popup specific patient sync
   useEffect(() => {
-    if (!isAuthReady || !user || !view) return;
+    if (!view) return;
     const patientId = queryParams.get('patientId');
     if (!patientId) return;
 
@@ -429,13 +428,15 @@ export default function App() {
       if (docSnap.exists()) {
         const p = docSnap.data() as Patient;
         setPatients([p]);
+      } else {
+        console.warn("Patient not found in Firestore:", patientId);
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `patients/${patientId}`);
+      console.error("Popup Sync Error:", error.message);
     });
 
     return () => unsubscribe();
-  }, [isAuthReady, user, view, queryParams]);
+  }, [view, queryParams]);
 
   const selectedPatient = useMemo(() => 
     patients.find(p => p.id === selectedPatientId) || null,
@@ -448,66 +449,6 @@ export default function App() {
     ),
     [patients, searchTerm]
   );
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    
-    const allowedUser = ALLOWED_USERS.find(u => u.id === loginId && u.pw === loginPw);
-    if (!allowedUser) {
-      setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
-      return;
-    }
-
-    const email = `${loginId}@anticancer.order`;
-    const password = loginPw;
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      console.error("Login attempt failed:", error.code, error.message);
-      
-      // If user not found or invalid credential (which can mean not found in newer versions), try to create
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-        } catch (createError: any) {
-          console.error("User creation failed:", createError.code, createError.message);
-          if (createError.code === 'auth/operation-not-allowed') {
-            setLoginError('Firebase 콘솔에서 Email/Password 로그인을 활성화해야 합니다.');
-          } else if (createError.code === 'auth/email-already-in-use') {
-            // This means the first sign-in failed due to wrong password, not missing user
-            setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
-          } else {
-            setLoginError(`로그인 중 오류가 발생했습니다: ${createError.message}`);
-          }
-        }
-      } else if (error.code === 'auth/operation-not-allowed') {
-        setLoginError('Firebase 콘솔에서 Email/Password 로그인을 활성화해야 합니다.');
-      } else {
-        setLoginError(`로그인 중 오류가 발생했습니다: ${error.message}`);
-      }
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Google login failed:", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setPatients([]);
-      setSelectedPatientId(null);
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   const handleAddPatient = async () => {
     const newPatient: Patient = {
@@ -524,7 +465,7 @@ export default function App() {
       hydration: '',
       sideEffects: '',
       adjustmentCriteria: '',
-      ownerId: user?.uid || 'public_user',
+      ownerId: 'public_user',
       chemoOrders: Array.from({ length: DEFAULT_CHEMO_ROWS }, () => ({
         id: crypto.randomUUID(),
         cycle: '',
@@ -581,7 +522,11 @@ export default function App() {
     const patient = patients.find(p => p.id === patientId);
     
     if (!patient) {
-      return null;
+      return (
+        <div className="p-6 bg-white min-h-screen flex items-center justify-center font-sans">
+          <div className="text-gray-400 font-bold">데이터를 불러오는 중...</div>
+        </div>
+      );
     }
     return (
       <ErrorBoundary>
@@ -604,17 +549,14 @@ export default function App() {
         {/* Sidebar: Patient List */}
         <div className="w-64 border-r-4 border-black flex flex-col">
           <div className="p-4 border-b-4 border-black bg-black text-white flex items-center justify-between">
-            <h1 className="text-xl font-black tracking-tighter uppercase">AntiCancer Order</h1>
-            <img src="https://vitejs.dev/logo.svg" className="w-5 h-5 invert" alt="Vite" />
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSelectedPatientId(null)}>
+              <h1 className="text-xl font-black tracking-tighter uppercase">AntiCancer Order</h1>
+              <img src="https://vitejs.dev/logo.svg" className="w-5 h-5 invert" alt="Vite" />
+            </div>
           </div>
           <div className="p-4 border-b-4 border-black bg-gray-100">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">환자리스트</h2>
-              {user && (
-                <button onClick={handleLogout} className="text-gray-500 hover:text-black" title="로그아웃">
-                  <LogOut className="w-5 h-5" />
-                </button>
-              )}
             </div>
             <div className="relative">
               <input
@@ -663,8 +605,14 @@ export default function App() {
           <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
             {/* Patient Basic Info */}
             <div className="border-2 border-black">
-              <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
-                환자기본정보
+              <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black flex justify-between items-center">
+                <span>환자기본정보</span>
+                <button 
+                  onClick={() => setSelectedPatientId(null)}
+                  className="text-xs bg-black text-white px-2 py-0.5 hover:bg-gray-800 transition-colors"
+                >
+                  종료 (홈으로)
+                </button>
               </div>
               <div className="p-4 grid grid-cols-2 gap-y-4 gap-x-8">
                 <div className="flex items-center gap-2">
