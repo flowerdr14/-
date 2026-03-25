@@ -354,6 +354,210 @@ const CalculatorPopup = () => {
   );
 };
 
+// --- Patient Detail Section ---
+interface PatientDetailProps {
+  patient: Patient;
+  onUpdate: (p: Patient) => void;
+  onClose: () => void;
+  onOpenChemo: () => void;
+}
+
+const PatientDetail = ({ patient, onUpdate, onClose, onOpenChemo }: PatientDetailProps) => {
+  const [localPatient, setLocalPatient] = useState(patient);
+
+  useEffect(() => {
+    setLocalPatient(patient);
+  }, [patient.id]);
+
+  const handleChange = (field: keyof Patient, value: any) => {
+    const updated = { ...localPatient, [field]: value };
+    setLocalPatient(updated);
+    onUpdate(updated);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
+      {/* Patient Basic Info */}
+      <div className="border-2 border-black">
+        <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black flex justify-between items-center">
+          <span>환자기본정보</span>
+          <button 
+            onClick={onClose}
+            className="text-xs bg-black text-white px-2 py-0.5 hover:bg-gray-800 transition-colors"
+          >
+            종료 (홈으로)
+          </button>
+        </div>
+        <div className="p-4 grid grid-cols-2 gap-y-4 gap-x-8">
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">성명:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="flex-1 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">생년월일:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="flex-1 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.birthDate}
+              onChange={(e) => handleChange('birthDate', e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">차트번호:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="flex-1 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.chartNumber}
+              onChange={(e) => handleChange('chartNumber', e.target.value)}
+            />
+          </div>
+          <div className="flex gap-8">
+            <div className="flex items-center gap-2">
+              <span className="font-bold whitespace-nowrap">나이:</span>
+              <input
+                type="text"
+                spellCheck="false"
+                className="w-16 border-b border-gray-300 focus:border-black outline-none"
+                value={localPatient.age}
+                onChange={(e) => handleChange('age', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold whitespace-nowrap">성별:</span>
+              <select
+                className="border-b border-gray-300 focus:border-black outline-none bg-transparent"
+                value={localPatient.gender}
+                onChange={(e) => handleChange('gender', e.target.value)}
+              >
+                <option value="">선택</option>
+                <option value="남">남</option>
+                <option value="여">여</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Physical Info */}
+      <div className="border-2 border-black">
+        <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
+          신체정보
+        </div>
+        <div className="p-4 flex gap-12">
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">BSA:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="w-24 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.bsa}
+              onChange={(e) => handleChange('bsa', e.target.value)}
+            />
+            <span className="text-sm text-gray-500">m²</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">키:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="w-24 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.height}
+              onChange={(e) => handleChange('height', e.target.value)}
+            />
+            <span className="text-sm text-gray-500">cm</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold whitespace-nowrap">체중:</span>
+            <input
+              type="text"
+              spellCheck="false"
+              className="w-24 border-b border-gray-300 focus:border-black outline-none"
+              value={localPatient.weight}
+              onChange={(e) => handleChange('weight', e.target.value)}
+            />
+            <span className="text-sm text-gray-500">kg</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Grid */}
+      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+        {/* Left: 기타기록 */}
+        <div className="col-span-4 flex flex-col border-2 border-black min-h-0">
+          <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
+            기타기록
+          </div>
+          <textarea
+            className="flex-1 p-2 focus:border-black outline-none resize-none"
+            spellCheck="false"
+            placeholder="기타 기록 사항을 입력하세요..."
+            value={localPatient.premedication + (localPatient.sideEffects ? '\n' + localPatient.sideEffects : '')}
+            onChange={(e) => {
+              const lines = e.target.value.split('\n');
+              const updated = { 
+                ...localPatient, 
+                premedication: lines[0] || '', 
+                sideEffects: lines.slice(1).join('\n') 
+              };
+              setLocalPatient(updated);
+              onUpdate(updated);
+            }}
+          />
+        </div>
+
+        {/* Middle: Hydration & Adjustment */}
+        <div className="col-span-6 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 flex flex-col border-2 border-black min-h-0">
+            <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
+              Hydration (수액)
+            </div>
+            <textarea
+              className="flex-1 p-2 focus:border-black outline-none resize-none"
+              spellCheck="false"
+              value={localPatient.hydration}
+              onChange={(e) => handleChange('hydration', e.target.value)}
+            />
+          </div>
+          <div className="flex-1 flex flex-col border-2 border-black min-h-0">
+            <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
+              조정기준
+            </div>
+            <textarea
+              className="flex-1 p-2 focus:border-black outline-none resize-none"
+              spellCheck="false"
+              value={localPatient.adjustmentCriteria}
+              onChange={(e) => handleChange('adjustmentCriteria', e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Right: Chemo Button */}
+        <div className="col-span-2 flex flex-col gap-4">
+          <div className="flex-1"></div>
+          <button
+            onClick={onOpenChemo}
+            className="h-32 bg-gray-400 border-2 border-black font-bold flex flex-col items-center justify-center gap-2 hover:bg-gray-500 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+          >
+            <span className="text-lg">항암오더</span>
+            <span className="text-lg">(활성창)</span>
+          </button>
+          <div className="py-3 bg-black text-white font-bold flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <Save className="w-5 h-5" /> 저장됨
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
@@ -366,6 +570,7 @@ export default function App() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isAuthReady, setIsAuthReady] = useState(true);
+  const updateTimeoutRef = React.useRef<Record<string, NodeJS.Timeout>>({});
 
   // Persistence
   useEffect(() => {
@@ -483,15 +688,26 @@ export default function App() {
     }
   };
 
-  const handleUpdatePatient = async (updatedPatient: Patient) => {
-    try {
-      await setDoc(doc(db, 'patients', updatedPatient.id), {
-        ...updatedPatient,
-        updatedAt: Timestamp.now()
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `patients/${updatedPatient.id}`);
+  const handleUpdatePatient = (updatedPatient: Patient) => {
+    // 1. Optimistic Update (Immediate UI feedback)
+    setPatients(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+
+    // 2. Debounced Firestore Sync
+    if (updateTimeoutRef.current[updatedPatient.id]) {
+      clearTimeout(updateTimeoutRef.current[updatedPatient.id]);
     }
+
+    updateTimeoutRef.current[updatedPatient.id] = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'patients', updatedPatient.id), {
+          ...updatedPatient,
+          updatedAt: Timestamp.now()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `patients/${updatedPatient.id}`);
+      }
+      delete updateTimeoutRef.current[updatedPatient.id];
+    }, 1000); // 1 second debounce
   };
 
   const handleDeletePatient = async (id: string) => {
@@ -602,186 +818,12 @@ export default function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedPatient ? (
-          <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
-            {/* Patient Basic Info */}
-            <div className="border-2 border-black">
-              <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black flex justify-between items-center">
-                <span>환자기본정보</span>
-                <button 
-                  onClick={() => setSelectedPatientId(null)}
-                  className="text-xs bg-black text-white px-2 py-0.5 hover:bg-gray-800 transition-colors"
-                >
-                  종료 (홈으로)
-                </button>
-              </div>
-              <div className="p-4 grid grid-cols-2 gap-y-4 gap-x-8">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">성명:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="flex-1 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.name}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, name: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">생년월일:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="flex-1 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.birthDate}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, birthDate: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">차트번호:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="flex-1 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.chartNumber}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, chartNumber: e.target.value })}
-                  />
-                </div>
-                <div className="flex gap-8">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold whitespace-nowrap">나이:</span>
-                    <input
-                      type="text"
-                      spellCheck="false"
-                      className="w-16 border-b border-gray-300 focus:border-black outline-none"
-                      value={selectedPatient.age}
-                      onChange={(e) => handleUpdatePatient({ ...selectedPatient, age: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold whitespace-nowrap">성별:</span>
-                    <select
-                      className="border-b border-gray-300 focus:border-black outline-none bg-transparent"
-                      value={selectedPatient.gender}
-                      onChange={(e) => handleUpdatePatient({ ...selectedPatient, gender: e.target.value })}
-                    >
-                      <option value="">선택</option>
-                      <option value="남">남</option>
-                      <option value="여">여</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Physical Info */}
-            <div className="border-2 border-black">
-              <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
-                신체정보
-              </div>
-              <div className="p-4 flex gap-12">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">BSA:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="w-24 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.bsa}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, bsa: e.target.value })}
-                  />
-                  <span className="text-sm text-gray-500">m²</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">키:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="w-24 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.height}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, height: e.target.value })}
-                  />
-                  <span className="text-sm text-gray-500">cm</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold whitespace-nowrap">체중:</span>
-                  <input
-                    type="text"
-                    spellCheck="false"
-                    className="w-24 border-b border-gray-300 focus:border-black outline-none"
-                    value={selectedPatient.weight}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, weight: e.target.value })}
-                  />
-                  <span className="text-sm text-gray-500">kg</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Grid */}
-            <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
-              {/* Left: 기타기록 */}
-              <div className="col-span-4 flex flex-col border-2 border-black min-h-0">
-                <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
-                  기타기록
-                </div>
-                <textarea
-                  className="flex-1 p-2 focus:border-black outline-none resize-none"
-                  spellCheck="false"
-                  placeholder="기타 기록 사항을 입력하세요..."
-                  value={selectedPatient.premedication + (selectedPatient.sideEffects ? '\n' + selectedPatient.sideEffects : '')}
-                  onChange={(e) => {
-                    const lines = e.target.value.split('\n');
-                    handleUpdatePatient({ 
-                      ...selectedPatient, 
-                      premedication: lines[0] || '', 
-                      sideEffects: lines.slice(1).join('\n') 
-                    });
-                  }}
-                />
-              </div>
-
-              {/* Middle: Hydration & Adjustment */}
-              <div className="col-span-6 flex flex-col gap-4 min-h-0">
-                <div className="flex-1 flex flex-col border-2 border-black min-h-0">
-                  <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
-                    Hydration (수액)
-                  </div>
-                  <textarea
-                    className="flex-1 p-2 focus:border-black outline-none resize-none"
-                    spellCheck="false"
-                    value={selectedPatient.hydration}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, hydration: e.target.value })}
-                  />
-                </div>
-                <div className="flex-1 flex flex-col border-2 border-black min-h-0">
-                  <div className="bg-gray-400 text-black px-4 py-1 font-bold border-b-2 border-black">
-                    조정기준
-                  </div>
-                  <textarea
-                    className="flex-1 p-2 focus:border-black outline-none resize-none"
-                    spellCheck="false"
-                    value={selectedPatient.adjustmentCriteria}
-                    onChange={(e) => handleUpdatePatient({ ...selectedPatient, adjustmentCriteria: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Right: Chemo Button */}
-              <div className="col-span-2 flex flex-col gap-4">
-                <div className="flex-1"></div>
-                <button
-                  onClick={openChemoPopup}
-                  className="h-32 bg-gray-400 border-2 border-black font-bold flex flex-col items-center justify-center gap-2 hover:bg-gray-500 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
-                >
-                  <span className="text-lg">항암오더</span>
-                  <span className="text-lg">(활성창)</span>
-                </button>
-                <button
-                  onClick={() => alert('환자 정보가 실시간으로 저장되고 있습니다.')}
-                  className="py-3 bg-black text-white font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
-                >
-                  <Save className="w-5 h-5" /> 저장됨
-                </button>
-              </div>
-            </div>
-          </div>
+          <PatientDetail 
+            patient={selectedPatient} 
+            onUpdate={handleUpdatePatient} 
+            onClose={() => setSelectedPatientId(null)}
+            onOpenChemo={openChemoPopup}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             환자를 선택하거나 추가해주세요.
