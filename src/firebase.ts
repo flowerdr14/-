@@ -13,13 +13,24 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if critical config is missing
-const isConfigMissing = !firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.appId;
+// Detailed check for missing config
+const requiredKeys = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_DATABASE_ID'
+];
 
-if (isConfigMissing) {
-  console.error('Firebase configuration is missing! Please set VITE_FIREBASE_* environment variables.');
+const missingKeys = requiredKeys.filter(key => !import.meta.env[key]);
+
+if (missingKeys.length > 0) {
+  console.error('❌ Firebase configuration is incomplete!');
+  console.error('Missing variables:', missingKeys.join(', '));
+  console.warn('Please check your Vercel Environment Variables settings.');
 }
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, import.meta.env.VITE_FIREBASE_DATABASE_ID);
+// Use default database if VITE_FIREBASE_DATABASE_ID is missing, but log it
+const dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+export const db = getFirestore(app, dbId || undefined);
 export const auth = getAuth(app);
