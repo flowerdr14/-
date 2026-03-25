@@ -376,11 +376,8 @@ export default function App() {
       setUser(u);
       setIsAuthReady(true);
     });
-    // Even if not logged in, we'll allow access
-    const timer = setTimeout(() => setIsAuthReady(true), 1000);
     return () => {
       unsubscribe();
-      clearTimeout(timer);
     };
   }, []);
 
@@ -575,12 +572,7 @@ export default function App() {
   };
 
   if (!isAuthReady) {
-    return (
-      <div className="p-10 flex flex-col items-center justify-center h-screen bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mb-4"></div>
-        <p className="font-bold">AntiCancer Order 로딩 중...</p>
-      </div>
-    );
+    return null;
   }
 
   // Render Popup Views
@@ -589,13 +581,7 @@ export default function App() {
     const patient = patients.find(p => p.id === patientId);
     
     if (!patient) {
-      return (
-        <div className="p-10 flex flex-col items-center justify-center h-screen bg-white border-4 border-black">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mb-4"></div>
-          <p className="font-bold text-xl mb-2">데이터를 동기화 중입니다...</p>
-          <p className="text-sm text-gray-500 mb-4">잠시만 기다려주세요.</p>
-        </div>
-      );
+      return null;
     }
     return (
       <ErrorBoundary>
